@@ -10,7 +10,7 @@ import {
 import { Editor } from "@/components/editor";
 import { PAGINAS, Pagina } from "@/components/paginas";
 import { useCatalogo } from "@/lib/almacen";
-import { descargar, esperar, pdfDePagina, puedeCompartir } from "@/lib/pdf";
+import { descargar, pdfDePagina, pdfDeVarias, puedeCompartir } from "@/lib/pdf";
 
 const ANCHO = 794;
 const ALTO = 1123;
@@ -60,20 +60,14 @@ export default function Home() {
   const escala = useEscala(cajaPreview, ajusteCompleto);
   const escalaGrande = useEscala(cajaExpandida, ajusteAncho);
 
-  async function generar(indices: number[]) {
-    const archivos: File[] = [];
-    for (const i of indices) {
-      const nodo = exportables.current[i];
-      if (!nodo) continue;
-      setMensaje(`Generando ${PAGINAS[i].titulo}…`);
-      const blob = await pdfDePagina(nodo);
-      archivos.push(
-        new File([blob], `${PAGINAS[i].archivo}.pdf`, {
-          type: "application/pdf",
-        }),
-      );
-    }
-    return archivos;
+  async function generarCatalogo() {
+    const nodos = exportables.current.filter(
+      (nodo): nodo is HTMLDivElement => !!nodo,
+    );
+    const blob = await pdfDeVarias(nodos, (i) =>
+      setMensaje(`Generando ${PAGINAS[i].titulo}…`),
+    );
+    return new File([blob], "catalogo.pdf", { type: "application/pdf" });
   }
 
   async function conProgreso(tarea: () => Promise<void>) {
@@ -92,31 +86,30 @@ export default function Home() {
 
   const descargarUna = () =>
     conProgreso(async () => {
-      const [archivo] = await generar([pagina]);
+      const nodo = exportables.current[pagina];
+      if (!nodo) return;
+      setMensaje(`Generando ${PAGINAS[pagina].titulo}…`);
+      const nombre = `${PAGINAS[pagina].archivo}.pdf`;
+      descargar(await pdfDePagina(nodo), nombre);
+      setMensaje(`Descargado: ${nombre}`);
+    });
+
+  const descargarCatalogo = () =>
+    conProgreso(async () => {
+      const archivo = await generarCatalogo();
       descargar(archivo, archivo.name);
-      setMensaje(`Descargado: ${archivo.name}`);
+      setMensaje("Listo: catálogo completo, 4 páginas en un PDF.");
     });
 
-  const descargarTodas = () =>
+  const compartirCatalogo = () =>
     conProgreso(async () => {
-      const archivos = await generar([0, 1, 2, 3]);
-      setMensaje("Descargando los 4 archivos…");
-      for (const archivo of archivos) {
-        descargar(archivo, archivo.name);
-        await esperar(600);
-      }
-      setMensaje("Listo: 4 PDF descargados.");
-    });
-
-  const compartirTodas = () =>
-    conProgreso(async () => {
-      const archivos = await generar([0, 1, 2, 3]);
-      if (!puedeCompartir(archivos)) {
-        setMensaje("Este navegador no puede compartir archivos. Descargalos.");
+      const archivo = await generarCatalogo();
+      if (!puedeCompartir([archivo])) {
+        setMensaje("Este navegador no puede compartir archivos. Descargalo.");
         return;
       }
       setMensaje(null);
-      await navigator.share({ files: archivos, title: "Catálogo" });
+      await navigator.share({ files: [archivo], title: "Catálogo" });
     });
 
   if (!listo) {
@@ -230,20 +223,20 @@ export default function Home() {
             <button
               type="button"
               disabled={ocupado}
-              onClick={descargarTodas}
+              onClick={descargarCatalogo}
               className="flex-1 rounded-lg bg-stone-800 px-3 py-3 text-sm text-white disabled:opacity-50"
             >
-              {ocupado ? "Generando…" : "Los 4 PDF"}
+              {ocupado ? "Generando…" : "Catálogo completo"}
             </button>
           </div>
           {comparte && (
             <button
               type="button"
               disabled={ocupado}
-              onClick={compartirTodas}
+              onClick={compartirCatalogo}
               className="mt-2 w-full rounded-lg border border-stone-300 bg-white px-3 py-3 text-sm text-stone-700 disabled:opacity-50"
             >
-              Compartir los 4 PDF
+              Compartir catálogo
             </button>
           )}
         </div>

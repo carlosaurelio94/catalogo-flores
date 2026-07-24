@@ -15,14 +15,38 @@ async function lienzoDePagina(elemento: HTMLElement, escala: number) {
   });
 }
 
-export async function pdfDePagina(elemento: HTMLElement): Promise<Blob> {
+async function imagenDePagina(elemento: HTMLElement) {
   // Un teléfono con poca memoria puede no soportar el lienzo a 3x (≈300 ppp).
   const lienzo = await lienzoDePagina(elemento, 3).catch(() =>
     lienzoDePagina(elemento, 2),
   );
-  const imagen = lienzo.toDataURL("image/jpeg", 0.92);
-  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  return lienzo.toDataURL("image/jpeg", 0.92);
+}
+
+function documentoA4() {
+  return new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+}
+
+function pegar(doc: jsPDF, imagen: string) {
   doc.addImage(imagen, "JPEG", 0, 0, A4_MM.ancho, A4_MM.alto, undefined, "FAST");
+}
+
+export async function pdfDePagina(elemento: HTMLElement): Promise<Blob> {
+  const doc = documentoA4();
+  pegar(doc, await imagenDePagina(elemento));
+  return doc.output("blob");
+}
+
+export async function pdfDeVarias(
+  elementos: HTMLElement[],
+  alEmpezarPagina?: (indice: number) => void,
+): Promise<Blob> {
+  const doc = documentoA4();
+  for (const [indice, elemento] of elementos.entries()) {
+    alEmpezarPagina?.(indice);
+    if (indice > 0) doc.addPage();
+    pegar(doc, await imagenDePagina(elemento));
+  }
   return doc.output("blob");
 }
 
@@ -44,6 +68,3 @@ export function puedeCompartir(archivos: File[]) {
     navigator.canShare({ files: archivos })
   );
 }
-
-export const esperar = (ms: number) =>
-  new Promise((resolver) => setTimeout(resolver, ms));

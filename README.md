@@ -1,6 +1,6 @@
 # Editor de catálogo
 
-Editor web de un catálogo floral de 4 páginas que exporta **4 PDF separados** en tamaño A4, listos para imprimir o mandar por WhatsApp.
+Editor web de un catálogo floral de 4 páginas que exporta a PDF en tamaño A4, listo para imprimir o mandar por WhatsApp.
 
 El diseño es fijo. Lo que se edita son los textos, los colores, las fuentes y las fotos.
 
@@ -9,9 +9,9 @@ El diseño es fijo. Lo que se edita son los textos, los colores, las fuentes y l
 1. Elegís la página arriba (Portada, Signature, Colecciones, Más diseños).
 2. En **Contenido** cambiás los textos, precios y fotos de esa página.
 3. En **Diseño** cambiás la paleta de colores y las dos fuentes.
-4. Abajo: **PDF de esta página** baja una sola, **Los 4 PDF** las baja todas.
+4. Abajo: **Catálogo completo** baja un único PDF con las 4 páginas, **PDF de esta página** baja solo la que estás viendo.
 
-Desde el celular aparece además **Compartir los 4 PDF**, que abre el menú nativo para mandarlos directo a WhatsApp o al mail.
+Desde el celular aparece además **Compartir catálogo**, que abre el menú nativo para mandarlo directo a WhatsApp o al mail.
 
 ## Dónde se guardan los datos
 
