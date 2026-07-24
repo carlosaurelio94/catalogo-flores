@@ -1,36 +1,40 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Editor de catálogo
 
-## Getting Started
+Editor web de un catálogo floral de 4 páginas que exporta **4 PDF separados** en tamaño A4, listos para imprimir o mandar por WhatsApp.
 
-First, run the development server:
+El diseño es fijo. Lo que se edita son los textos, los colores, las fuentes y las fotos.
+
+## Cómo se usa
+
+1. Elegís la página arriba (Portada, Signature, Colecciones, Más diseños).
+2. En **Contenido** cambiás los textos, precios y fotos de esa página.
+3. En **Diseño** cambiás la paleta de colores y las dos fuentes.
+4. Abajo: **PDF de esta página** baja una sola, **Los 4 PDF** las baja todas.
+
+Desde el celular aparece además **Compartir los 4 PDF**, que abre el menú nativo para mandarlos directo a WhatsApp o al mail.
+
+## Dónde se guardan los datos
+
+Todo vive en el navegador (IndexedDB). No hay servidor ni cuenta.
+
+Eso significa que **si limpiás los datos del navegador, se pierde el catálogo**. Para no depender de eso, en la pestaña **Diseño** hay una sección de copia de seguridad: *Descargar copia* baja un archivo JSON con todo, y *Cargar copia* lo restaura. También sirve para pasar el catálogo de la compu al celular.
+
+## Desarrollo
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Next.js 16 (App Router, Turbopack), React 19, Tailwind v4, TypeScript.
+Los PDF se generan en el navegador con `html2canvas-pro` + `jspdf`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Cómo está armado
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `src/lib/tipos.ts` — modelo de datos, valores iniciales y las paletas.
+- `src/lib/almacen.ts` — el hook que persiste en IndexedDB.
+- `src/lib/pdf.ts` — captura de la página y armado del PDF A4.
+- `src/components/paginas.tsx` — el diseño de las 4 páginas (esto es lo que no se edita desde la UI).
+- `src/components/editor.tsx` — el panel de edición.
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Las páginas se maquetan a 794×1123 px, que es A4 exacto a 96 ppp, y se exportan a 3× (≈300 ppp). La vista previa se escala con CSS, pero la captura se hace sobre una copia oculta renderizada a tamaño real: escalar el nodo que se captura rompe el resultado.
