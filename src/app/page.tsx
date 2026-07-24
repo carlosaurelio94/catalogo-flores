@@ -1,15 +1,10 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from "react";
+import { useCallback, useRef, useState, useSyncExternalStore } from "react";
 import { Editor } from "@/components/editor";
 import { PAGINAS, Pagina } from "@/components/paginas";
 import { useCatalogo } from "@/lib/almacen";
+import { alternarModo, esOscuro, suscribirModo } from "@/lib/modo";
 import { descargar, pdfDePagina, pdfDeVarias, puedeCompartir } from "@/lib/pdf";
 
 const ANCHO = 794;
@@ -17,21 +12,71 @@ const ALTO = 1123;
 
 const sinSuscripcion = () => () => {};
 
-function useEscala(
-  ref: React.RefObject<HTMLDivElement | null>,
-  ajustar: (ancho: number, alto: number) => number,
-) {
+// Ref de callback y no useEffect: la caja se monta recién cuando termina de
+// cargar el catálogo, y un efecto con dependencias vacías nunca la vería.
+function useEscala(ajustar: (ancho: number, alto: number) => number) {
   const [escala, setEscala] = useState(0.25);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const observador = new ResizeObserver(() => {
-      setEscala(ajustar(el.clientWidth, el.clientHeight));
-    });
-    observador.observe(el);
-    return () => observador.disconnect();
-  }, [ref, ajustar]);
-  return escala;
+  const medir = useCallback(
+    (el: HTMLDivElement | null) => {
+      if (!el) return;
+      const observador = new ResizeObserver(() =>
+        setEscala(ajustar(el.clientWidth, el.clientHeight)),
+      );
+      observador.observe(el);
+      return () => observador.disconnect();
+    },
+    [ajustar],
+  );
+  return [medir, escala] as const;
+}
+
+function BotonModo() {
+  const oscuro = useSyncExternalStore(suscribirModo, esOscuro, () => false);
+  return (
+    <button
+      type="button"
+      onClick={alternarModo}
+      title={oscuro ? "Pasar a modo claro" : "Pasar a modo oscuro"}
+      aria-label={oscuro ? "Pasar a modo claro" : "Pasar a modo oscuro"}
+      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-stone-200 text-stone-500 oscuro:border-stone-700 oscuro:text-stone-300"
+    >
+      {oscuro ? <IconoSol /> : <IconoLuna />}
+    </button>
+  );
+}
+
+function IconoSol() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="12" cy="12" r="4.2" stroke="currentColor" strokeWidth="1.6" />
+      {[0, 45, 90, 135, 180, 225, 270, 315].map((grados) => (
+        <line
+          key={grados}
+          x1="12"
+          y1="1.8"
+          x2="12"
+          y2="4.2"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          transform={`rotate(${grados} 12 12)`}
+        />
+      ))}
+    </svg>
+  );
+}
+
+function IconoLuna() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M20 14.2A8.2 8.2 0 0 1 9.8 4a8.4 8.4 0 1 0 10.2 10.2Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
 }
 
 export default function Home() {
@@ -48,8 +93,6 @@ export default function Home() {
   );
 
   const exportables = useRef<(HTMLDivElement | null)[]>([]);
-  const cajaPreview = useRef<HTMLDivElement>(null);
-  const cajaExpandida = useRef<HTMLDivElement>(null);
 
   const ajusteCompleto = useCallback(
     (w: number, h: number) => Math.min((w - 24) / ANCHO, (h - 24) / ALTO),
@@ -57,8 +100,8 @@ export default function Home() {
   );
   const ajusteAncho = useCallback((w: number) => (w - 24) / ANCHO, []);
 
-  const escala = useEscala(cajaPreview, ajusteCompleto);
-  const escalaGrande = useEscala(cajaExpandida, ajusteAncho);
+  const [medirPreview, escala] = useEscala(ajusteCompleto);
+  const [medirExpandida, escalaGrande] = useEscala(ajusteAncho);
 
   async function generarCatalogo() {
     const nodos = exportables.current.filter(
@@ -123,7 +166,7 @@ export default function Home() {
   return (
     <div className="flex h-dvh flex-col lg:flex-row">
       <main className="flex min-h-0 flex-1 flex-col lg:order-2">
-        <div className="flex items-center gap-2 border-b border-stone-200 bg-white px-3 py-2">
+        <div className="flex items-center gap-2 border-b border-stone-200 bg-white px-3 py-2 oscuro:border-stone-800 oscuro:bg-stone-900">
           <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto">
             {PAGINAS.map((p, i) => (
               <button
@@ -132,26 +175,27 @@ export default function Home() {
                 onClick={() => setPagina(i)}
                 className={`shrink-0 rounded-full px-3 py-1.5 text-xs transition ${
                   pagina === i
-                    ? "bg-stone-800 text-white"
-                    : "bg-stone-100 text-stone-500"
+                    ? "bg-stone-800 text-white oscuro:bg-stone-100 oscuro:text-stone-900"
+                    : "bg-stone-100 text-stone-500 oscuro:bg-stone-800 oscuro:text-stone-400"
                 }`}
               >
                 {i + 1}. {p.titulo}
               </button>
             ))}
           </div>
+          <BotonModo />
           <button
             type="button"
             onClick={() => setExpandido(true)}
-            className="shrink-0 rounded-full border border-stone-200 px-3 py-1.5 text-xs text-stone-500"
+            className="shrink-0 rounded-full border border-stone-200 px-3 py-1.5 text-xs text-stone-500 oscuro:border-stone-700 oscuro:text-stone-300"
           >
             Ampliar
           </button>
         </div>
 
         <div
-          ref={cajaPreview}
-          className="flex min-h-[38dvh] flex-1 items-center justify-center overflow-hidden bg-stone-200/60 p-3"
+          ref={medirPreview}
+          className="flex min-h-[38dvh] flex-1 items-center justify-center overflow-hidden bg-stone-200/60 p-3 oscuro:bg-black"
         >
           <div
             style={{ width: ANCHO * escala, height: ALTO * escala }}
@@ -169,8 +213,8 @@ export default function Home() {
         </div>
       </main>
 
-      <aside className="flex min-h-0 flex-1 flex-col border-t border-stone-200 bg-stone-50 lg:order-1 lg:w-[430px] lg:flex-none lg:border-t-0 lg:border-r">
-        <div className="flex gap-1 border-b border-stone-200 bg-white px-3 pt-2">
+      <aside className="flex min-h-0 flex-1 flex-col border-t border-stone-200 bg-stone-50 oscuro:border-stone-800 oscuro:bg-stone-950 lg:order-1 lg:w-[430px] lg:flex-none lg:border-t-0 lg:border-r">
+        <div className="flex gap-1 border-b border-stone-200 bg-white px-3 pt-2 oscuro:border-stone-800 oscuro:bg-stone-900">
           {(
             [
               ["contenido", "Contenido"],
@@ -183,15 +227,15 @@ export default function Home() {
               onClick={() => setPestana(id)}
               className={`rounded-t-lg px-4 py-2 text-sm transition ${
                 pestana === id
-                  ? "border-b-2 border-stone-800 font-medium text-stone-800"
-                  : "text-stone-400"
+                  ? "border-b-2 border-stone-800 font-medium text-stone-800 oscuro:border-stone-100 oscuro:text-stone-100"
+                  : "text-stone-400 oscuro:text-stone-500"
               }`}
             >
               {texto}
             </button>
           ))}
           {pestana === "contenido" && (
-            <span className="ml-auto self-center pb-2 text-[11px] text-stone-400">
+            <span className="ml-auto self-center pb-2 text-[11px] text-stone-400 oscuro:text-stone-500">
               {PAGINAS[pagina].titulo}
             </span>
           )}
@@ -207,16 +251,18 @@ export default function Home() {
           />
         </div>
 
-        <div className="border-t border-stone-200 bg-white p-3">
+        <div className="border-t border-stone-200 bg-white p-3 oscuro:border-stone-800 oscuro:bg-stone-900">
           {mensaje && (
-            <p className="mb-2 text-center text-xs text-stone-500">{mensaje}</p>
+            <p className="mb-2 text-center text-xs text-stone-500 oscuro:text-stone-400">
+              {mensaje}
+            </p>
           )}
           <div className="flex gap-2">
             <button
               type="button"
               disabled={ocupado}
               onClick={descargarUna}
-              className="flex-1 rounded-lg border border-stone-300 bg-white px-3 py-3 text-sm text-stone-700 disabled:opacity-50"
+              className="flex-1 rounded-lg border border-stone-300 bg-white px-3 py-3 text-sm text-stone-700 oscuro:border-stone-700 oscuro:bg-stone-800 oscuro:text-stone-200 disabled:opacity-50"
             >
               PDF de esta página
             </button>
@@ -224,7 +270,7 @@ export default function Home() {
               type="button"
               disabled={ocupado}
               onClick={descargarCatalogo}
-              className="flex-1 rounded-lg bg-stone-800 px-3 py-3 text-sm text-white disabled:opacity-50"
+              className="flex-1 rounded-lg bg-stone-800 px-3 py-3 text-sm text-white oscuro:bg-stone-100 oscuro:text-stone-900 disabled:opacity-50"
             >
               {ocupado ? "Generando…" : "Catálogo completo"}
             </button>
@@ -234,7 +280,7 @@ export default function Home() {
               type="button"
               disabled={ocupado}
               onClick={compartirCatalogo}
-              className="mt-2 w-full rounded-lg border border-stone-300 bg-white px-3 py-3 text-sm text-stone-700 disabled:opacity-50"
+              className="mt-2 w-full rounded-lg border border-stone-300 bg-white px-3 py-3 text-sm text-stone-700 oscuro:border-stone-700 oscuro:bg-stone-800 oscuro:text-stone-200 disabled:opacity-50"
             >
               Compartir catálogo
             </button>
@@ -269,7 +315,7 @@ export default function Home() {
               Cerrar
             </button>
           </div>
-          <div ref={cajaExpandida} className="flex-1 overflow-auto p-3">
+          <div ref={medirExpandida} className="flex-1 overflow-auto p-3">
             <div
               className="mx-auto"
               style={{

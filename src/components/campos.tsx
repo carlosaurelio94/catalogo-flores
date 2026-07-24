@@ -13,8 +13,8 @@ export function Seccion({
   children: React.ReactNode;
 }) {
   return (
-    <section className="border-b border-stone-200 px-4 py-5 last:border-b-0">
-      <h3 className="mb-3 text-[11px] font-medium tracking-[0.18em] text-stone-400 uppercase">
+    <section className="border-b border-stone-200 px-4 py-5 oscuro:border-stone-800 last:border-b-0">
+      <h3 className="mb-3 text-[11px] font-medium tracking-[0.18em] text-stone-400 uppercase oscuro:text-stone-500">
         {titulo}
       </h3>
       <div className="space-y-3">{children}</div>
@@ -23,7 +23,9 @@ export function Seccion({
 }
 
 const claseInput =
-  "w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-stone-800 outline-none transition focus:border-stone-400";
+  "w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-stone-800 outline-none transition focus:border-stone-400 oscuro:border-stone-700 oscuro:bg-stone-900 oscuro:text-stone-100 oscuro:focus:border-stone-500";
+
+const claseEtiqueta = "mb-1 block text-xs text-stone-500 oscuro:text-stone-400";
 
 export function Campo({
   etiqueta,
@@ -39,7 +41,7 @@ export function Campo({
   const id = useId();
   return (
     <div>
-      <label htmlFor={id} className="mb-1 block text-xs text-stone-500">
+      <label htmlFor={id} className={claseEtiqueta}>
         {etiqueta}
       </label>
       <input
@@ -67,7 +69,7 @@ export function CampoArea({
   const id = useId();
   return (
     <div>
-      <label htmlFor={id} className="mb-1 block text-xs text-stone-500">
+      <label htmlFor={id} className={claseEtiqueta}>
         {etiqueta}
       </label>
       <textarea
@@ -95,7 +97,7 @@ export function CampoSelector({
   const id = useId();
   return (
     <div>
-      <label htmlFor={id} className="mb-1 block text-xs text-stone-500">
+      <label htmlFor={id} className={claseEtiqueta}>
         {etiqueta}
       </label>
       <select
@@ -114,6 +116,8 @@ export function CampoSelector({
   );
 }
 
+const HEX = /^#[0-9a-f]{6}$/i;
+
 export function CampoColor({
   etiqueta,
   valor,
@@ -123,21 +127,47 @@ export function CampoColor({
   valor: string;
   onChange: (v: string) => void;
 }) {
+  const id = useId();
+  const [texto, setTexto] = useState(valor);
+  const [ultimo, setUltimo] = useState(valor);
+
+  // Si el color cambió desde afuera (al aplicar una paleta), el texto lo sigue.
+  if (ultimo !== valor) {
+    setUltimo(valor);
+    setTexto(valor);
+  }
+
+  function escribir(entrada: string) {
+    const hex = entrada.startsWith("#") ? entrada : `#${entrada}`;
+    setTexto(hex);
+    if (HEX.test(hex)) onChange(hex.toLowerCase());
+  }
+
   return (
-    <label className="flex items-center justify-between gap-3 rounded-lg border border-stone-200 bg-white px-3 py-2">
-      <span className="text-sm text-stone-600">{etiqueta}</span>
-      <span className="flex items-center gap-2">
-        <span className="font-mono text-xs text-stone-400 uppercase">
-          {valor}
-        </span>
-        <input
-          type="color"
-          value={valor}
-          onChange={(e) => onChange(e.target.value)}
-          className="h-8 w-10 cursor-pointer rounded border border-stone-200 bg-white p-0.5"
-        />
-      </span>
-    </label>
+    <div className="flex items-center gap-3 rounded-lg border border-stone-200 bg-white px-3 py-2 oscuro:border-stone-700 oscuro:bg-stone-900">
+      <input
+        type="color"
+        aria-label={`${etiqueta}: elegir color`}
+        value={valor}
+        onChange={(e) => onChange(e.target.value)}
+        className="h-9 w-9 shrink-0 cursor-pointer rounded border border-stone-200 bg-white p-0.5 oscuro:border-stone-700"
+      />
+      <label
+        htmlFor={id}
+        className="min-w-0 flex-1 truncate text-sm text-stone-600 oscuro:text-stone-300"
+      >
+        {etiqueta}
+      </label>
+      <input
+        id={id}
+        value={texto}
+        spellCheck={false}
+        maxLength={7}
+        onChange={(e) => escribir(e.target.value)}
+        onBlur={() => setTexto(valor)}
+        className="w-[104px] shrink-0 rounded-md border border-stone-200 bg-stone-50 px-2 py-1 text-center font-mono text-[16px] uppercase outline-none focus:border-stone-400 oscuro:border-stone-700 oscuro:bg-stone-800 oscuro:text-stone-100"
+      />
+    </div>
   );
 }
 
@@ -166,13 +196,15 @@ export function CampoFoto({
   }
 
   return (
-    <div className="rounded-lg border border-stone-200 bg-white p-3">
-      <div className="mb-2 text-xs text-stone-500">{etiqueta}</div>
+    <div className="rounded-lg border border-stone-200 bg-white p-3 oscuro:border-stone-700 oscuro:bg-stone-900">
+      <div className="mb-2 text-xs text-stone-500 oscuro:text-stone-400">
+        {etiqueta}
+      </div>
       <div className="flex gap-3">
         <button
           type="button"
           onClick={() => entrada.current?.click()}
-          className="h-20 w-20 shrink-0 overflow-hidden rounded-md border border-dashed border-stone-300 bg-stone-50 text-[11px] text-stone-400"
+          className="h-20 w-20 shrink-0 overflow-hidden rounded-md border border-dashed border-stone-300 bg-stone-50 text-[11px] text-stone-400 oscuro:border-stone-600 oscuro:bg-stone-800 oscuro:text-stone-500"
         >
           {foto.src ? (
             <img
@@ -190,7 +222,7 @@ export function CampoFoto({
             <button
               type="button"
               onClick={() => entrada.current?.click()}
-              className="rounded-md bg-stone-800 px-3 py-1.5 text-xs text-white active:bg-stone-700"
+              className="rounded-md bg-stone-800 px-3 py-1.5 text-xs text-white active:bg-stone-700 oscuro:bg-stone-100 oscuro:text-stone-900"
             >
               {cargando ? "Cargando…" : foto.src ? "Cambiar" : "Subir foto"}
             </button>
@@ -198,7 +230,7 @@ export function CampoFoto({
               <button
                 type="button"
                 onClick={() => onChange({ ...foto, src: null })}
-                className="rounded-md border border-stone-200 px-3 py-1.5 text-xs text-stone-500"
+                className="rounded-md border border-stone-200 px-3 py-1.5 text-xs text-stone-500 oscuro:border-stone-600 oscuro:text-stone-400"
               >
                 Quitar
               </button>
@@ -206,7 +238,9 @@ export function CampoFoto({
           </div>
           {foto.src && (
             <label className="block">
-              <span className="text-[11px] text-stone-400">Encuadre</span>
+              <span className="text-[11px] text-stone-400 oscuro:text-stone-500">
+                Encuadre
+              </span>
               <input
                 type="range"
                 min={0}

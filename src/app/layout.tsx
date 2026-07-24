@@ -63,14 +63,21 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
+// Corre antes del primer pintado para que el modo oscuro no arranque en blanco.
+const aplicarModo = `try{var m=localStorage.getItem("modo-editor");if(m==="oscuro"||(!m&&matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.classList.add("oscuro")}catch(e){}`;
+
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html
       lang="es"
+      suppressHydrationWarning
       className={`${cormorant.variable} ${playfair.variable} ${lora.variable} ${jost.variable} ${parisienne.variable} ${greatVibes.variable} ${dancing.variable} h-full antialiased`}
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: aplicarModo }} />
+      </head>
       <body className="min-h-full">{children}</body>
     </html>
   );

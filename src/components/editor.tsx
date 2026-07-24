@@ -212,7 +212,9 @@ function Colecciones({
       {col.items.map((item, i) => (
         <Seccion key={item.id} titulo={`Colección ${i + 1}`}>
           <div>
-            <span className="mb-2 block text-xs text-stone-500">Ícono</span>
+            <span className="mb-2 block text-xs text-stone-500 oscuro:text-stone-400">
+              Ícono
+            </span>
             <div className="flex flex-wrap gap-2">
               {ICONOS.map((ic) => (
                 <button
@@ -224,8 +226,8 @@ function Colecciones({
                   }
                   className={`flex h-11 w-11 items-center justify-center rounded-full border transition ${
                     item.icono === ic.id
-                      ? "border-stone-800 bg-stone-800"
-                      : "border-stone-200 bg-white"
+                      ? "border-stone-800 bg-stone-800 oscuro:border-stone-300 oscuro:bg-stone-600"
+                      : "border-stone-200 bg-white oscuro:border-stone-700 oscuro:bg-stone-900"
                   }`}
                 >
                   <Icono
@@ -359,13 +361,13 @@ function Diseno({
               key={p.nombre}
               type="button"
               onClick={() => editar((c) => Object.assign(c.tema, p.tema))}
-              className="flex items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 py-2 text-left text-xs text-stone-600 active:bg-stone-50"
+              className="flex items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 py-2 text-left text-xs text-stone-600 active:bg-stone-50 oscuro:border-stone-700 oscuro:bg-stone-900 oscuro:text-stone-300"
             >
               <span className="flex shrink-0">
                 {[p.tema.acento, p.tema.barra, p.tema.titulo].map((c, i) => (
                   <span
                     key={i}
-                    className="-ml-1 h-5 w-5 rounded-full border border-white first:ml-0"
+                    className="-ml-1 h-5 w-5 rounded-full border border-white first:ml-0 oscuro:border-stone-900"
                     style={{ background: c }}
                   />
                 ))}
@@ -376,7 +378,11 @@ function Diseno({
         </div>
       </Seccion>
 
-      <Seccion titulo="Colores">
+      <Seccion titulo="Colores a medida">
+        <p className="text-xs leading-relaxed text-stone-500 oscuro:text-stone-400">
+          Tocá el cuadrito para elegir un color, o escribí el código hex si ya
+          lo tenés (por ejemplo el de tu logo).
+        </p>
         <CampoColor
           etiqueta="Fondo"
           valor={t.fondo}
@@ -425,7 +431,7 @@ function Diseno({
       </Seccion>
 
       <Seccion titulo="Copia de seguridad">
-        <p className="text-xs leading-relaxed text-stone-500">
+        <p className="text-xs leading-relaxed text-stone-500 oscuro:text-stone-400">
           El catálogo se guarda solo en este navegador. Descargá una copia para
           poder recuperarlo o pasarlo a otro dispositivo.
         </p>
@@ -433,14 +439,14 @@ function Diseno({
           <button
             type="button"
             onClick={guardarCopia}
-            className="rounded-md border border-stone-200 bg-white px-3 py-2 text-xs text-stone-600"
+            className="rounded-md border border-stone-200 bg-white px-3 py-2 text-xs text-stone-600 oscuro:border-stone-700 oscuro:bg-stone-800 oscuro:text-stone-200"
           >
             Descargar copia
           </button>
           <button
             type="button"
             onClick={() => entradaCopia.current?.click()}
-            className="rounded-md border border-stone-200 bg-white px-3 py-2 text-xs text-stone-600"
+            className="rounded-md border border-stone-200 bg-white px-3 py-2 text-xs text-stone-600 oscuro:border-stone-700 oscuro:bg-stone-800 oscuro:text-stone-200"
           >
             Cargar copia
           </button>
@@ -450,7 +456,7 @@ function Diseno({
               if (confirm("¿Volver al catálogo original? Se pierden los cambios."))
                 onReiniciar();
             }}
-            className="rounded-md border border-red-200 bg-white px-3 py-2 text-xs text-red-600"
+            className="rounded-md border border-red-200 bg-white px-3 py-2 text-xs text-red-600 oscuro:border-red-900 oscuro:bg-stone-800 oscuro:text-red-400"
           >
             Restablecer todo
           </button>

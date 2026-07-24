@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant oscuro (&:where(.oscuro, .oscuro *));
+
 html {
   -webkit-text-size-adjust: 100%;
 }
@@ -8,6 +10,16 @@ body {
   background: #f1ede8;
   color: #3a322d;
   font-family: var(--f-jost), system-ui, sans-serif;
+}
+
+.oscuro body {
+  background: #14110f;
+  color: #e7e5e4;
+}
+
+/* Los selectores de color nativos se ven como un recuadro negro en modo oscuro. */
+.oscuro input[type="color"] {
+  background: #ffffff;
 }
 
 input,
