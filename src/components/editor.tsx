@@ -2,14 +2,18 @@
 
 import { useRef } from "react";
 import {
+  ARREGLOS_POR_PAGINA,
   FUENTES_SCRIPT,
   FUENTES_TITULO,
   PALETAS,
+  arregloNuevo,
+  coleccionNueva,
   type Catalogo,
+  type IconoDatoId,
   type IconoId,
-  type Producto,
 } from "@/lib/tipos";
-import { ICONOS, Icono } from "./adornos";
+import type { PaginaInfo } from "./paginas";
+import { ICONOS, ICONOS_DATO, Icono, IconoDato } from "./adornos";
 import {
   Campo,
   CampoArea,
@@ -24,86 +28,129 @@ type Editar = (fn: (borrador: Catalogo) => void) => void;
 export function Editor({
   catalogo,
   editar,
-  pagina,
+  info,
   pestana,
   onReiniciar,
+  onIrAPagina,
 }: {
   catalogo: Catalogo;
   editar: Editar;
-  pagina: number;
+  info: PaginaInfo;
   pestana: "contenido" | "diseno";
   onReiniciar: () => void;
+  onIrAPagina: (id: string) => void;
 }) {
   if (pestana === "diseno") {
     return (
       <Diseno catalogo={catalogo} editar={editar} onReiniciar={onReiniciar} />
     );
   }
-  if (pagina === 0) return <Portada catalogo={catalogo} editar={editar} />;
-  if (pagina === 1) return <Signature catalogo={catalogo} editar={editar} />;
-  if (pagina === 2) return <Colecciones catalogo={catalogo} editar={editar} />;
-  return <MasDisenos catalogo={catalogo} editar={editar} />;
-}
-
-function CamposProducto({
-  titulo,
-  producto,
-  aplicar,
-}: {
-  titulo: string;
-  producto: Producto;
-  aplicar: (cambio: (p: Producto) => void) => void;
-}) {
+  if (info.tipo === "portada") {
+    return <Portada catalogo={catalogo} editar={editar} />;
+  }
+  if (info.tipo === "nosotros") {
+    return <Nosotros catalogo={catalogo} editar={editar} />;
+  }
+  if (info.tipo === "indice") {
+    return (
+      <Indice catalogo={catalogo} editar={editar} onIrAPagina={onIrAPagina} />
+    );
+  }
+  if (info.tipo === "arreglos") {
+    return (
+      <ArreglosEditor
+        catalogo={catalogo}
+        editar={editar}
+        indice={info.col}
+        desde={info.desde}
+      />
+    );
+  }
   return (
-    <Seccion titulo={titulo}>
-      <Campo
-        etiqueta="Nombre"
-        valor={producto.nombre}
-        onChange={(v) => aplicar((p) => (p.nombre = v))}
-      />
-      <Campo
-        etiqueta="Precio"
-        valor={producto.precio}
-        onChange={(v) => aplicar((p) => (p.precio = v))}
-      />
-      <CampoFoto
-        etiqueta="Foto"
-        foto={producto.foto}
-        onChange={(f) => aplicar((p) => (p.foto = f))}
-      />
-    </Seccion>
+    <ColeccionEditor
+      catalogo={catalogo}
+      editar={editar}
+      indice={info.col}
+      onIrAPagina={onIrAPagina}
+    />
   );
 }
 
+/* ---------- selector de íconos ---------- */
+
+function Selector<T extends string>({
+  etiqueta,
+  valor,
+  opciones,
+  onChange,
+  dibujar,
+}: {
+  etiqueta: string;
+  valor: T;
+  opciones: { id: T; etiqueta: string }[];
+  onChange: (id: T) => void;
+  dibujar: (id: T, color: string) => React.ReactNode;
+}) {
+  return (
+    <div>
+      <span className="mb-2 block text-xs text-stone-500 oscuro:text-stone-400">
+        {etiqueta}
+      </span>
+      <div className="flex flex-wrap gap-2">
+        {opciones.map((o) => {
+          const activo = valor === o.id;
+          return (
+            <button
+              key={o.id}
+              type="button"
+              title={o.etiqueta}
+              aria-label={o.etiqueta}
+              aria-pressed={activo}
+              onClick={() => onChange(o.id)}
+              className={`flex h-11 w-11 items-center justify-center rounded-full border transition ${
+                activo
+                  ? "border-stone-800 bg-stone-800 oscuro:border-stone-300 oscuro:bg-stone-600"
+                  : "border-stone-200 bg-white oscuro:border-stone-700 oscuro:bg-stone-900"
+              }`}
+            >
+              {dibujar(o.id, activo ? "#ffffff" : "#8a8078")}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ---------- página 1: portada ---------- */
+
 function Portada({ catalogo, editar }: { catalogo: Catalogo; editar: Editar }) {
   const p = catalogo.portada;
+  const m = catalogo.marca;
   return (
     <>
-      <Seccion titulo="Encabezado">
+      <Seccion titulo="Marca">
         <Campo
-          etiqueta="Nombre de la marca"
-          valor={p.marca}
-          onChange={(v) => editar((c) => (c.portada.marca = v))}
+          etiqueta="Nombre"
+          valor={m.nombre}
+          onChange={(v) => editar((c) => (c.marca.nombre = v))}
         />
         <Campo
           etiqueta="Segunda línea"
-          valor={p.submarca}
-          onChange={(v) => editar((c) => (c.portada.submarca = v))}
+          valor={m.submarca}
+          onChange={(v) => editar((c) => (c.marca.submarca = v))}
         />
+        <p className="text-xs leading-relaxed text-stone-500 oscuro:text-stone-400">
+          La marca aparece en la portada y en el encabezado de cada colección.
+        </p>
+      </Seccion>
+
+      <Seccion titulo="Textos">
         <Campo
           etiqueta="Lema"
           valor={p.lema}
           onChange={(v) => editar((c) => (c.portada.lema = v))}
         />
-      </Seccion>
-      <Seccion titulo="Foto principal">
-        <CampoFoto
-          etiqueta="Imagen de portada"
-          foto={p.foto}
-          onChange={(f) => editar((c) => (c.portada.foto = f))}
-        />
-      </Seccion>
-      <Seccion titulo="Título">
         <Campo
           etiqueta="Título grande"
           valor={p.titulo}
@@ -115,16 +162,31 @@ function Portada({ catalogo, editar }: { catalogo: Catalogo; editar: Editar }) {
           onChange={(v) => editar((c) => (c.portada.subtitulo = v))}
         />
       </Seccion>
-      <Seccion titulo="Datos de contacto">
+
+      <Seccion titulo="Foto principal">
+        <CampoFoto
+          etiqueta="Imagen de portada"
+          foto={p.foto}
+          onChange={(f) => editar((c) => (c.portada.foto = f))}
+        />
+      </Seccion>
+
+      <Seccion titulo="Pie de la portada">
         <Campo
           etiqueta="Servicio"
           valor={p.servicio}
           onChange={(v) => editar((c) => (c.portada.servicio = v))}
         />
         <Campo
-          etiqueta="Teléfono"
-          valor={p.telefono}
-          onChange={(v) => editar((c) => (c.portada.telefono = v))}
+          etiqueta="Teléfono 1"
+          valor={p.telefono1}
+          onChange={(v) => editar((c) => (c.portada.telefono1 = v))}
+        />
+        <Campo
+          etiqueta="Teléfono 2"
+          valor={p.telefono2}
+          placeholder="Dejalo vacío si es uno solo"
+          onChange={(v) => editar((c) => (c.portada.telefono2 = v))}
         />
         <Campo
           etiqueta="Ciudad"
@@ -136,190 +198,442 @@ function Portada({ catalogo, editar }: { catalogo: Catalogo; editar: Editar }) {
   );
 }
 
-function Signature({
+/* ---------- página 2: quiénes somos ---------- */
+
+function Nosotros({
   catalogo,
   editar,
 }: {
   catalogo: Catalogo;
   editar: Editar;
 }) {
-  const s = catalogo.signature;
+  const n = catalogo.nosotros;
   return (
     <>
-      <Seccion titulo="Encabezado">
-        <Campo
-          etiqueta="Etiqueta superior"
-          valor={s.etiqueta}
-          onChange={(v) => editar((c) => (c.signature.etiqueta = v))}
-        />
+      <Seccion titulo="Texto">
         <Campo
           etiqueta="Título"
-          valor={s.titulo}
-          onChange={(v) => editar((c) => (c.signature.titulo = v))}
-        />
-        <Campo
-          etiqueta="Texto manuscrito"
-          valor={s.script}
-          onChange={(v) => editar((c) => (c.signature.script = v))}
+          valor={n.titulo}
+          onChange={(v) => editar((c) => (c.nosotros.titulo = v))}
         />
         <CampoArea
           etiqueta="Descripción"
-          valor={s.descripcion}
-          onChange={(v) => editar((c) => (c.signature.descripcion = v))}
+          filas={8}
+          valor={n.texto}
+          onChange={(v) => editar((c) => (c.nosotros.texto = v))}
         />
-      </Seccion>
-      <CamposProducto
-        titulo="Producto destacado"
-        producto={s.destacado}
-        aplicar={(cambio) => editar((c) => cambio(c.signature.destacado))}
-      />
-      {s.productos.map((prod, i) => (
-        <CamposProducto
-          key={prod.id}
-          titulo={`Producto ${i + 1}`}
-          producto={prod}
-          aplicar={(cambio) => editar((c) => cambio(c.signature.productos[i]))}
-        />
-      ))}
-      <Seccion titulo="Pie">
+        <p className="text-xs leading-relaxed text-stone-500 oscuro:text-stone-400">
+          Dejá una línea en blanco entre párrafos.
+        </p>
         <Campo
-          etiqueta="Número de página"
-          valor={s.numero}
-          onChange={(v) => editar((c) => (c.signature.numero = v))}
+          etiqueta="Cierre, primera línea"
+          valor={n.cierre1}
+          onChange={(v) => editar((c) => (c.nosotros.cierre1 = v))}
+        />
+        <Campo
+          etiqueta="Cierre, línea manuscrita"
+          valor={n.cierre2}
+          onChange={(v) => editar((c) => (c.nosotros.cierre2 = v))}
         />
       </Seccion>
-    </>
-  );
-}
 
-function Colecciones({
-  catalogo,
-  editar,
-}: {
-  catalogo: Catalogo;
-  editar: Editar;
-}) {
-  const col = catalogo.colecciones;
-  return (
-    <>
-      <Seccion titulo="Título">
-        <Campo
-          etiqueta="Título de la página"
-          valor={col.titulo}
-          onChange={(v) => editar((c) => (c.colecciones.titulo = v))}
+      <Seccion titulo="Foto">
+        <CampoFoto
+          etiqueta="Imagen de la página"
+          foto={n.foto}
+          onChange={(f) => editar((c) => (c.nosotros.foto = f))}
         />
       </Seccion>
-      {col.items.map((item, i) => (
-        <Seccion key={item.id} titulo={`Colección ${i + 1}`}>
-          <div>
-            <span className="mb-2 block text-xs text-stone-500 oscuro:text-stone-400">
-              Ícono
-            </span>
-            <div className="flex flex-wrap gap-2">
-              {ICONOS.map((ic) => (
-                <button
-                  key={ic.id}
-                  type="button"
-                  title={ic.etiqueta}
-                  onClick={() =>
-                    editar((c) => (c.colecciones.items[i].icono = ic.id))
-                  }
-                  className={`flex h-11 w-11 items-center justify-center rounded-full border transition ${
-                    item.icono === ic.id
-                      ? "border-stone-800 bg-stone-800 oscuro:border-stone-300 oscuro:bg-stone-600"
-                      : "border-stone-200 bg-white oscuro:border-stone-700 oscuro:bg-stone-900"
-                  }`}
-                >
-                  <Icono
-                    id={ic.id as IconoId}
-                    color={item.icono === ic.id ? "#ffffff" : "#8a8078"}
-                    tam={22}
-                  />
-                </button>
-              ))}
-            </div>
-          </div>
+
+      {n.datos.map((d, i) => (
+        <Seccion key={d.id} titulo={`Dato ${i + 1}`}>
+          <Selector<IconoDatoId>
+            etiqueta="Ícono"
+            valor={d.icono}
+            opciones={ICONOS_DATO}
+            onChange={(id) => editar((c) => (c.nosotros.datos[i].icono = id))}
+            dibujar={(id, color) => (
+              <IconoDato id={id} color={color} tam={20} />
+            )}
+          />
           <Campo
-            etiqueta="Nombre"
-            valor={item.nombre}
-            onChange={(v) => editar((c) => (c.colecciones.items[i].nombre = v))}
+            etiqueta="Título"
+            valor={d.titulo}
+            onChange={(v) => editar((c) => (c.nosotros.datos[i].titulo = v))}
           />
           <CampoArea
-            etiqueta="Descripción"
-            filas={2}
-            valor={item.descripcion}
-            onChange={(v) =>
-              editar((c) => (c.colecciones.items[i].descripcion = v))
-            }
+            etiqueta="Texto"
+            filas={3}
+            valor={d.texto}
+            onChange={(v) => editar((c) => (c.nosotros.datos[i].texto = v))}
           />
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() =>
+                editar((c) => {
+                  c.nosotros.datos.splice(i + 1, 0, {
+                    id: `d${Date.now().toString(36)}`,
+                    icono: "calendario",
+                    titulo: "NUEVO DATO",
+                    texto: "Escribí acá la información.",
+                  });
+                })
+              }
+              className="rounded-md border border-stone-200 bg-white px-3 py-2 text-xs text-stone-600 oscuro:border-stone-700 oscuro:bg-stone-800 oscuro:text-stone-200"
+            >
+              Agregar dato debajo
+            </button>
+            {n.datos.length > 1 && (
+              <button
+                type="button"
+                onClick={() =>
+                  editar((c) => {
+                    c.nosotros.datos.splice(i, 1);
+                  })
+                }
+                className="rounded-md border border-red-200 bg-white px-3 py-2 text-xs text-red-600 oscuro:border-red-900 oscuro:bg-stone-800 oscuro:text-red-400"
+              >
+                Quitar
+              </button>
+            )}
+          </div>
         </Seccion>
       ))}
-      <Seccion titulo="Pie de página">
+    </>
+  );
+}
+
+/* ---------- página 3: índice ---------- */
+
+function Indice({
+  catalogo,
+  editar,
+  onIrAPagina,
+}: {
+  catalogo: Catalogo;
+  editar: Editar;
+  onIrAPagina: (id: string) => void;
+}) {
+  const cols = catalogo.colecciones;
+  return (
+    <>
+      <Seccion titulo="Título">
         <Campo
-          etiqueta="Marca"
-          valor={col.marcaPie}
-          onChange={(v) => editar((c) => (c.colecciones.marcaPie = v))}
+          etiqueta="Encabezado"
+          valor={catalogo.indice.encabezado}
+          onChange={(v) => editar((c) => (c.indice.encabezado = v))}
         />
         <Campo
-          etiqueta="Lema"
-          valor={col.lemaPie}
-          onChange={(v) => editar((c) => (c.colecciones.lemaPie = v))}
+          etiqueta="Título grande"
+          valor={catalogo.indice.titulo}
+          onChange={(v) => editar((c) => (c.indice.titulo = v))}
         />
-        <Campo
-          etiqueta="Número de página"
-          valor={col.numero}
-          onChange={(v) => editar((c) => (c.colecciones.numero = v))}
-        />
+      </Seccion>
+
+      <Seccion titulo="Colecciones">
+        <p className="text-xs leading-relaxed text-stone-500 oscuro:text-stone-400">
+          El índice se arma solo con las colecciones. Cada una tiene su propia
+          página; tocá una para editarla.
+        </p>
+        <ul className="space-y-2">
+          {cols.map((col, i) => (
+            <li key={col.id} className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => onIrAPagina(col.id)}
+                className="flex min-w-0 flex-1 items-center gap-3 rounded-lg border border-stone-200 bg-white px-3 py-2 text-left oscuro:border-stone-700 oscuro:bg-stone-900"
+              >
+                <span className="w-6 shrink-0 text-center font-mono text-xs text-stone-400">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <Icono id={col.icono} color="#8a8078" tam={20} />
+                <span className="min-w-0 flex-1 truncate text-sm text-stone-700 oscuro:text-stone-200">
+                  {col.nombre || `Colección ${i + 1}`}
+                </span>
+              </button>
+              <div className="flex shrink-0 flex-col gap-1">
+                <button
+                  type="button"
+                  aria-label="Subir"
+                  disabled={i === 0}
+                  onClick={() =>
+                    editar((c) => {
+                      const [x] = c.colecciones.splice(i, 1);
+                      c.colecciones.splice(i - 1, 0, x);
+                    })
+                  }
+                  className="h-6 w-7 rounded border border-stone-200 text-[10px] text-stone-500 disabled:opacity-30 oscuro:border-stone-700 oscuro:text-stone-400"
+                >
+                  ▲
+                </button>
+                <button
+                  type="button"
+                  aria-label="Bajar"
+                  disabled={i === cols.length - 1}
+                  onClick={() =>
+                    editar((c) => {
+                      const [x] = c.colecciones.splice(i, 1);
+                      c.colecciones.splice(i + 1, 0, x);
+                    })
+                  }
+                  className="h-6 w-7 rounded border border-stone-200 text-[10px] text-stone-500 disabled:opacity-30 oscuro:border-stone-700 oscuro:text-stone-400"
+                >
+                  ▼
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+        <button
+          type="button"
+          onClick={() =>
+            editar((c) => {
+              c.colecciones.push(coleccionNueva(c.colecciones.length + 1));
+            })
+          }
+          className="w-full rounded-md bg-stone-800 px-3 py-2 text-xs text-white active:bg-stone-700 oscuro:bg-stone-100 oscuro:text-stone-900"
+        >
+          Agregar colección
+        </button>
       </Seccion>
     </>
   );
 }
 
-function MasDisenos({
+/* ---------- páginas 4+: una por colección ---------- */
+
+function ColeccionEditor({
   catalogo,
   editar,
+  indice,
+  onIrAPagina,
 }: {
   catalogo: Catalogo;
   editar: Editar;
+  indice: number;
+  onIrAPagina: (id: string) => void;
 }) {
-  const m = catalogo.masDisenos;
+  const col = catalogo.colecciones[indice];
+  if (!col) return null;
+
   return (
     <>
-      <Seccion titulo="Título">
+      <Seccion titulo={`Colección ${indice + 1}`}>
+        <Selector<IconoId>
+          etiqueta="Ícono"
+          valor={col.icono}
+          opciones={ICONOS}
+          onChange={(id) => editar((c) => (c.colecciones[indice].icono = id))}
+          dibujar={(id, color) => <Icono id={id} color={color} tam={22} />}
+        />
         <Campo
-          etiqueta="Título de la página"
-          valor={m.titulo}
-          onChange={(v) => editar((c) => (c.masDisenos.titulo = v))}
+          etiqueta="Nombre"
+          valor={col.nombre}
+          onChange={(v) => editar((c) => (c.colecciones[indice].nombre = v))}
+        />
+        <CampoArea
+          etiqueta="Descripción"
+          filas={3}
+          valor={col.descripcion}
+          onChange={(v) =>
+            editar((c) => (c.colecciones[indice].descripcion = v))
+          }
+        />
+        <Campo
+          etiqueta="Precio (opcional)"
+          valor={col.precio}
+          placeholder="Dejalo vacío si no querés mostrarlo"
+          onChange={(v) => editar((c) => (c.colecciones[indice].precio = v))}
         />
       </Seccion>
-      {m.productos.map((prod, i) => (
-        <CamposProducto
-          key={prod.id}
-          titulo={`Producto ${i + 1}`}
-          producto={prod}
-          aplicar={(cambio) => editar((c) => cambio(c.masDisenos.productos[i]))}
+
+      <Seccion titulo="Foto del arreglo">
+        <CampoFoto
+          etiqueta="Imagen"
+          foto={col.foto}
+          onChange={(f) => editar((c) => (c.colecciones[indice].foto = f))}
         />
-      ))}
-      <Seccion titulo="Cierre">
-        <Campo
-          etiqueta="Primera línea"
-          valor={m.cierre1}
-          onChange={(v) => editar((c) => (c.masDisenos.cierre1 = v))}
-        />
-        <Campo
-          etiqueta="Segunda línea"
-          valor={m.cierre2}
-          onChange={(v) => editar((c) => (c.masDisenos.cierre2 = v))}
-        />
-        <Campo
-          etiqueta="Número de página"
-          valor={m.numero}
-          onChange={(v) => editar((c) => (c.masDisenos.numero = v))}
-        />
+        <p className="text-xs leading-relaxed text-stone-500 oscuro:text-stone-400">
+          El recuadro siempre mide lo mismo, así que podés cambiar el arreglo
+          cada mes sin que se mueva el diseño. «Entera» muestra la foto completa;
+          «Recortada» la agranda hasta llenar el recuadro.
+        </p>
+      </Seccion>
+
+      <Seccion titulo="Arreglos">
+        <p className="text-xs leading-relaxed text-stone-500 oscuro:text-stone-400">
+          {col.arreglos.length === 0
+            ? "Esta colección todavía no tiene arreglos."
+            : `Esta colección tiene ${col.arreglos.length} ${col.arreglos.length === 1 ? "arreglo" : "arreglos"}, de a ${ARREGLOS_POR_PAGINA} por hoja.`}
+        </p>
+        <button
+          type="button"
+          onClick={() =>
+            editar((c) => c.colecciones[indice].arreglos.push(arregloNuevo()))
+          }
+          className="w-full rounded-lg bg-stone-800 px-3 py-2.5 text-xs text-white oscuro:bg-stone-100 oscuro:text-stone-900"
+        >
+          + Agregar arreglo
+        </button>
+      </Seccion>
+
+      <Seccion titulo="Esta página">
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() =>
+              editar((c) => {
+                c.colecciones.splice(
+                  indice + 1,
+                  0,
+                  coleccionNueva(c.colecciones.length + 1),
+                );
+              })
+            }
+            className="rounded-md border border-stone-200 bg-white px-3 py-2 text-xs text-stone-600 oscuro:border-stone-700 oscuro:bg-stone-800 oscuro:text-stone-200"
+          >
+            Agregar colección debajo
+          </button>
+          {catalogo.colecciones.length > 1 && (
+            <button
+              type="button"
+              onClick={() => {
+                if (!confirm(`¿Quitar la colección «${col.nombre}»?`)) return;
+                editar((c) => {
+                  c.colecciones.splice(indice, 1);
+                });
+                onIrAPagina("indice");
+              }}
+              className="rounded-md border border-red-200 bg-white px-3 py-2 text-xs text-red-600 oscuro:border-red-900 oscuro:bg-stone-800 oscuro:text-red-400"
+            >
+              Quitar esta colección
+            </button>
+          )}
+        </div>
       </Seccion>
     </>
   );
 }
+
+/* ---------- página de arreglos ---------- */
+
+function ArreglosEditor({
+  catalogo,
+  editar,
+  indice,
+  desde,
+}: {
+  catalogo: Catalogo;
+  editar: Editar;
+  indice: number;
+  desde: number;
+}) {
+  const col = catalogo.colecciones[indice];
+  if (!col) return null;
+  const visibles = col.arreglos.slice(desde, desde + ARREGLOS_POR_PAGINA);
+
+  function reordenar(pos: number, salto: number) {
+    editar((c) => {
+      const lista = c.colecciones[indice].arreglos;
+      const [x] = lista.splice(pos, 1);
+      lista.splice(pos + salto, 0, x);
+    });
+  }
+
+  return (
+    <>
+      {visibles.map((arreglo, i) => {
+        const pos = desde + i;
+        return (
+          <Seccion
+            key={arreglo.id}
+            titulo={`Arreglo ${String(pos + 1).padStart(2, "0")} · ${col.nombre}`}
+          >
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={pos === 0}
+                onClick={() => reordenar(pos, -1)}
+                className="rounded-md border border-stone-200 bg-white px-3 py-2 text-xs text-stone-600 disabled:opacity-30 oscuro:border-stone-700 oscuro:bg-stone-800 oscuro:text-stone-200"
+              >
+                Subir
+              </button>
+              <button
+                type="button"
+                disabled={pos === col.arreglos.length - 1}
+                onClick={() => reordenar(pos, 1)}
+                className="rounded-md border border-stone-200 bg-white px-3 py-2 text-xs text-stone-600 disabled:opacity-30 oscuro:border-stone-700 oscuro:bg-stone-800 oscuro:text-stone-200"
+              >
+                Bajar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!confirm(`¿Quitar «${arreglo.nombre}»?`)) return;
+                  editar((c) => c.colecciones[indice].arreglos.splice(pos, 1));
+                }}
+                className="rounded-md border border-red-200 bg-white px-3 py-2 text-xs text-red-600 oscuro:border-red-900 oscuro:bg-stone-800 oscuro:text-red-400"
+              >
+                Quitar
+              </button>
+            </div>
+            <Campo
+              etiqueta="Nombre"
+              valor={arreglo.nombre}
+              onChange={(v) =>
+                editar((c) => (c.colecciones[indice].arreglos[pos].nombre = v))
+              }
+            />
+            <CampoArea
+              etiqueta="Descripción"
+              valor={arreglo.descripcion}
+              filas={4}
+              onChange={(v) =>
+                editar(
+                  (c) => (c.colecciones[indice].arreglos[pos].descripcion = v),
+                )
+              }
+            />
+            <Campo
+              etiqueta="Precio (sin el signo $)"
+              valor={arreglo.precio}
+              placeholder="18"
+              onChange={(v) =>
+                editar((c) => (c.colecciones[indice].arreglos[pos].precio = v))
+              }
+            />
+            <CampoFoto
+              etiqueta="Foto del arreglo"
+              foto={arreglo.foto}
+              onChange={(f) =>
+                editar((c) => (c.colecciones[indice].arreglos[pos].foto = f))
+              }
+            />
+          </Seccion>
+        );
+      })}
+
+      <Seccion titulo="Agregar">
+        <button
+          type="button"
+          onClick={() =>
+            editar((c) => c.colecciones[indice].arreglos.push(arregloNuevo()))
+          }
+          className="w-full rounded-lg bg-stone-800 px-3 py-2.5 text-xs text-white oscuro:bg-stone-100 oscuro:text-stone-900"
+        >
+          + Agregar arreglo a {col.nombre}
+        </button>
+        <p className="text-xs leading-relaxed text-stone-500 oscuro:text-stone-400">
+          Van de a {ARREGLOS_POR_PAGINA} por hoja. Si no entra en esta página se
+          crea una hoja más dentro de la misma colección.
+        </p>
+      </Seccion>
+    </>
+  );
+}
+
+/* ---------- pestaña diseño ---------- */
 
 function Diseno({
   catalogo,
@@ -409,9 +723,23 @@ function Diseno({
           onChange={(v) => editar((c) => (c.tema.texto = v))}
         />
         <CampoColor
+          etiqueta="Precios"
+          valor={t.precio}
+          onChange={(v) => editar((c) => (c.tema.precio = v))}
+        />
+        <CampoColor
           etiqueta="Bordes"
           valor={t.borde}
           onChange={(v) => editar((c) => (c.tema.borde = v))}
+        />
+      </Seccion>
+
+      <Seccion titulo="Moneda">
+        <Campo
+          etiqueta="Se muestra al lado del precio (vacío para no mostrar nada)"
+          valor={catalogo.moneda}
+          placeholder="USD"
+          onChange={(v) => editar((c) => (c.moneda = v))}
         />
       </Seccion>
 

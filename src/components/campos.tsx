@@ -210,8 +210,11 @@ export function CampoFoto({
             <img
               src={foto.src}
               alt=""
-              className="h-full w-full object-cover"
-              style={{ objectPosition: `50% ${foto.pos}%` }}
+              className="h-full w-full"
+              style={{
+                objectFit: foto.encaje === "entero" ? "contain" : "cover",
+                objectPosition: `50% ${foto.pos}%`,
+              }}
             />
           ) : (
             "Sin foto"
@@ -237,21 +240,46 @@ export function CampoFoto({
             )}
           </div>
           {foto.src && (
-            <label className="block">
-              <span className="text-[11px] text-stone-400 oscuro:text-stone-500">
-                Encuadre
-              </span>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                value={foto.pos}
-                onChange={(e) =>
-                  onChange({ ...foto, pos: Number(e.target.value) })
-                }
-                className="w-full accent-stone-700"
-              />
-            </label>
+            <>
+              <div className="flex gap-1.5">
+                {(
+                  [
+                    ["entero", "Entera"],
+                    ["cubrir", "Recortada"],
+                  ] as const
+                ).map(([id, nombre]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => onChange({ ...foto, encaje: id })}
+                    className={`flex-1 rounded-md border px-2 py-1 text-[11px] transition ${
+                      foto.encaje === id
+                        ? "border-stone-800 bg-stone-800 text-white oscuro:border-stone-300 oscuro:bg-stone-100 oscuro:text-stone-900"
+                        : "border-stone-200 bg-white text-stone-500 oscuro:border-stone-600 oscuro:bg-stone-800 oscuro:text-stone-400"
+                    }`}
+                  >
+                    {nombre}
+                  </button>
+                ))}
+              </div>
+              {foto.encaje === "cubrir" && (
+                <label className="block">
+                  <span className="text-[11px] text-stone-400 oscuro:text-stone-500">
+                    Encuadre
+                  </span>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={foto.pos}
+                    onChange={(e) =>
+                      onChange({ ...foto, pos: Number(e.target.value) })
+                    }
+                    className="w-full accent-stone-700"
+                  />
+                </label>
+              )}
+            </>
           )}
         </div>
       </div>

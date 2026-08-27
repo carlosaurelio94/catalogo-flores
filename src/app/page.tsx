@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState, useSyncExternalStore } from "react";
 import { Editor } from "@/components/editor";
-import { PAGINAS, Pagina } from "@/components/paginas";
+import { Pagina, paginasDe } from "@/components/paginas";
 import { useCatalogo } from "@/lib/almacen";
 import { alternarModo, esOscuro, suscribirModo } from "@/lib/modo";
 import { descargar, pdfDePagina, pdfDeVarias, puedeCompartir } from "@/lib/pdf";
@@ -81,7 +81,7 @@ function IconoLuna() {
 
 export default function Home() {
   const { catalogo, editar, reiniciar, listo } = useCatalogo();
-  const [pagina, setPagina] = useState(0);
+  const [paginaElegida, setPagina] = useState(0);
   const [pestana, setPestana] = useState<"contenido" | "diseno">("contenido");
   const [expandido, setExpandido] = useState(false);
   const [ocupado, setOcupado] = useState(false);
@@ -94,6 +94,11 @@ export default function Home() {
 
   const exportables = useRef<(HTMLDivElement | null)[]>([]);
 
+  // Las páginas dependen de cuántas colecciones haya: al quitar una, la página
+  // que se estaba viendo puede quedar fuera de rango.
+  const paginas = paginasDe(catalogo);
+  const pagina = Math.min(paginaElegida, paginas.length - 1);
+
   const ajusteCompleto = useCallback(
     (w: number, h: number) => Math.min((w - 24) / ANCHO, (h - 24) / ALTO),
     [],
@@ -104,11 +109,11 @@ export default function Home() {
   const [medirExpandida, escalaGrande] = useEscala(ajusteAncho);
 
   async function generarCatalogo() {
-    const nodos = exportables.current.filter(
-      (nodo): nodo is HTMLDivElement => !!nodo,
-    );
+    const nodos = exportables.current
+      .slice(0, paginas.length)
+      .filter((nodo): nodo is HTMLDivElement => !!nodo);
     const blob = await pdfDeVarias(nodos, (i) =>
-      setMensaje(`Generando ${PAGINAS[i].titulo}…`),
+      setMensaje(`Generando ${paginas[i].titulo}…`),
     );
     return new File([blob], "catalogo.pdf", { type: "application/pdf" });
   }
@@ -131,8 +136,8 @@ export default function Home() {
     conProgreso(async () => {
       const nodo = exportables.current[pagina];
       if (!nodo) return;
-      setMensaje(`Generando ${PAGINAS[pagina].titulo}…`);
-      const nombre = `${PAGINAS[pagina].archivo}.pdf`;
+      setMensaje(`Generando ${paginas[pagina].titulo}…`);
+      const nombre = `${paginas[pagina].archivo}.pdf`;
       descargar(await pdfDePagina(nodo), nombre);
       setMensaje(`Descargado: ${nombre}`);
     });
@@ -141,7 +146,9 @@ export default function Home() {
     conProgreso(async () => {
       const archivo = await generarCatalogo();
       descargar(archivo, archivo.name);
-      setMensaje("Listo: catálogo completo, 4 páginas en un PDF.");
+      setMensaje(
+        `Listo: catálogo completo, ${paginas.length} páginas en un PDF.`,
+      );
     });
 
   const compartirCatalogo = () =>
@@ -168,7 +175,7 @@ export default function Home() {
       <main className="flex min-h-0 flex-1 flex-col lg:order-2">
         <div className="flex items-center gap-2 border-b border-stone-200 bg-white px-3 py-2 oscuro:border-stone-800 oscuro:bg-stone-900">
           <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto">
-            {PAGINAS.map((p, i) => (
+            {paginas.map((p, i) => (
               <button
                 key={p.id}
                 type="button"
@@ -207,7 +214,7 @@ export default function Home() {
                 transformOrigin: "top left",
               }}
             >
-              <Pagina indice={pagina} catalogo={catalogo} />
+              <Pagina info={paginas[pagina]} catalogo={catalogo} />
             </div>
           </div>
         </div>
@@ -236,7 +243,7 @@ export default function Home() {
           ))}
           {pestana === "contenido" && (
             <span className="ml-auto self-center pb-2 text-[11px] text-stone-400 oscuro:text-stone-500">
-              {PAGINAS[pagina].titulo}
+              {paginas[pagina].titulo}
             </span>
           )}
         </div>
@@ -245,9 +252,13 @@ export default function Home() {
           <Editor
             catalogo={catalogo}
             editar={editar}
-            pagina={pagina}
+            info={paginas[pagina]}
             pestana={pestana}
             onReiniciar={reiniciar}
+            onIrAPagina={(id) => {
+              const i = paginas.findIndex((p) => p.id === id);
+              if (i >= 0) setPagina(i);
+            }}
           />
         </div>
 
@@ -292,7 +303,7 @@ export default function Home() {
         <div className="fixed inset-0 z-50 flex flex-col bg-stone-900/95">
           <div className="flex items-center gap-2 p-3">
             <div className="flex gap-1 overflow-x-auto">
-              {PAGINAS.map((p, i) => (
+              {paginas.map((p, i) => (
                 <button
                   key={p.id}
                   type="button"
@@ -329,7 +340,7 @@ export default function Home() {
                   transformOrigin: "top left",
                 }}
               >
-                <Pagina indice={pagina} catalogo={catalogo} />
+                <Pagina info={paginas[pagina]} catalogo={catalogo} />
               </div>
             </div>
           </div>
@@ -346,14 +357,14 @@ export default function Home() {
           pointerEvents: "none",
         }}
       >
-        {PAGINAS.map((p, i) => (
+        {paginas.map((p, i) => (
           <div
             key={p.id}
             ref={(nodo) => {
               exportables.current[i] = nodo;
             }}
           >
-            <Pagina indice={i} catalogo={catalogo} />
+            <Pagina info={p} catalogo={catalogo} />
           </div>
         ))}
       </div>
