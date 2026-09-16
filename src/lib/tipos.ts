@@ -146,7 +146,7 @@ export const CATALOGO_INICIAL: Catalogo = {
   tema: TEMA_INICIAL,
   marca: {
     nombre: "Urbano",
-    submarca: "FLOWERS",
+    submarca: "FLORISTERÍA",
   },
   portada: {
     lema: "CREAMOS MOMENTOS QUE FLORECEN",
@@ -161,7 +161,7 @@ export const CATALOGO_INICIAL: Catalogo = {
   nosotros: {
     titulo: "QUIÉNES SOMOS",
     texto: [
-      "Urbano Flowers es una floristería creada dentro de un Vivero, donde la naturaleza nos inspira cada día.",
+      "Urbano Floristería nació dentro de un Vivero, donde la naturaleza nos inspira cada día.",
       "Diseñamos arreglos únicos con flores frescas y de la más alta calidad, combinando creatividad, dedicación y mucho amor en cada detalle.",
       "Nuestro compromiso es ofrecerte momentos inolvidables a través del lenguaje universal de las flores.",
     ].join("\n\n"),
@@ -186,7 +186,7 @@ export const CATALOGO_INICIAL: Catalogo = {
         id: "d5",
         icono: "instagram",
         titulo: "SÍGUENOS",
-        texto: "@urbano_flowers22",
+        texto: "@urbano_floristeria",
       },
     ],
   },
