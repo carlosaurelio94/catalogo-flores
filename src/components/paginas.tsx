@@ -182,10 +182,34 @@ function Parrafos({
   );
 }
 
+
+// El logo real de la floristería. Es un PNG con transparencia, así que no
+// sigue los colores del tema: un logo no se retiñe.
+function Sello({ tam = 96 }: { tam?: number }) {
+  return (
+    <img
+      src="/logo-sello.png"
+      alt=""
+      style={{ width: tam, height: "auto", display: "block", margin: "0 auto" }}
+    />
+  );
+}
+
+function Flor({ tam = 44 }: { tam?: number }) {
+  return (
+    <img
+      src="/logo-flor.png"
+      alt=""
+      style={{ width: tam, height: "auto", display: "block", margin: "0 auto" }}
+    />
+  );
+}
+
 function Logo({ tema, marca }: { tema: Tema; marca: Catalogo["marca"] }) {
   return (
     <div style={{ textAlign: "center" }}>
-      <div style={{ fontSize: 34, lineHeight: 1.1, color: tema.titulo }}>
+      <Flor tam={40} />
+      <div style={{ marginTop: 6, fontSize: 34, lineHeight: 1.1, color: tema.titulo }}>
         {marca.nombre}
       </div>
       <div
@@ -216,7 +240,7 @@ export function PaginaPortada({ catalogo }: { catalogo: Catalogo }) {
           flex: "none",
         }}
       >
-        <Ornamento color={tema.acento} tam={32} />
+        <Sello tam={112} />
         <div
           style={{
             marginTop: 10,
@@ -293,7 +317,7 @@ export function PaginaPortada({ catalogo }: { catalogo: Catalogo }) {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <Ornamento color={tema.acento} tam={30} />
+          <Flor tam={34} />
           <span
             style={{
               fontSize: 13,
@@ -554,7 +578,7 @@ export function PaginaIndice({ catalogo }: { catalogo: Catalogo }) {
             flex: "none",
           }}
         >
-          <Ornamento color={tema.acento} tam={38} />
+          <Flor tam={44} />
           <div
             style={{
               marginTop: 22,
